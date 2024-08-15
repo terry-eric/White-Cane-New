@@ -5,28 +5,21 @@ import { voiceState } from "./index.js";
 // add new
 let serviceUuid = 0x181A;
 // let serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-let accUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-let gyroUuid = "d2912856-de63-11ed-b5ea-0242ac120002";
-let switchUuid = "4e1c00da-57b6-4cfd-83f8-6b1e2beae05d";
 let voiceUuid = "a0451b3a-f056-4ce5-bc13-0838e26b2d68";
-let ultrasoundUuid = "f064e521-de21-4027-a7da-b83241ba8fd1";
-let thresholdUuid = "b51ff51f-0f0e-4406-b9be-92f40c1a14e8";
 
 // 宣告一個包含兩個 UUID 的陣列
-// let UuidTargets = [accUuid, gyroUuid, switchUuid, voiceUuid, ultrasoundUuid, thresholdUuid];
-let UuidTargets = [accUuid, gyroUuid, switchUuid, voiceUuid, ultrasoundUuid];
+let UuidTargets = [voiceUuid];
 let server;
 let service;
 let device;
-const Acc = [], Gyro = [], US = [];
+const US = [];
 
 export async function bleSearch() {
     try {
         log('Requesting Bluetooth Device...');
         device = await navigator.bluetooth.requestDevice({
             // add newDD
-            // optionalServices: [serviceUuid, accUuid, gyroUuid, voiceUuid, ultrasoundUuid, thresholdUuid],
-            optionalServices: [serviceUuid, accUuid, gyroUuid, voiceUuid, ultrasoundUuid],
+            optionalServices: [serviceUuid, voiceUuid],
             // acceptAllDevices: true
             filters: [{ name: "WhiteCane" }]
         });
@@ -130,39 +123,6 @@ function callback(event) {
             }
         }
         console.log(voiceMode);
-    }
-
-    if (event.currentTarget.uuid === accUuid ||
-        event.currentTarget.uuid === gyroUuid) {
-
-        let value = event.currentTarget.value;
-        let a = [];
-        for (let i = 0; i < value.byteLength; i++) {
-            a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
-        }
-        let bytes = a;
-
-        let X = bytes2int16([bytes[0], bytes[1]]) / 100
-        let Y = bytes2int16([bytes[2], bytes[3]]) / 100
-        let Z = bytes2int16([bytes[4], bytes[5]]) / 100
-
-        if (event.currentTarget.uuid === accUuid) {
-            Acc.push(["acc", X, Y, Z]);
-        }
-        if (event.currentTarget.uuid === gyroUuid) {
-            Gyro.push(["gyro", X, Y, Z]);
-        }
-    }
-
-    if (event.currentTarget.uuid == ultrasoundUuid) {
-        let value = event.currentTarget.value;
-        let a = [];
-        for (let i = 0; i < value.byteLength; i++) {
-            a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
-        }
-        let bytes = a;
-        let val = bytes2int16([bytes[0], bytes[1]]) / 100
-        US.push(["US", val])
     }
 }
 
