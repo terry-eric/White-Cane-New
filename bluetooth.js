@@ -118,8 +118,16 @@ function callback(event) {
             if (voiceState == "Ring"){
                 document.getElementById('g_mp3').play();
             }else{
-                // speak("發現導盲磚");
-                speak("發現斑馬線");
+                speak("發現導盲磚");
+                // speak("發現斑馬線");
+            }
+        }
+        if (voiceMode == 5) {
+            if (voiceState == "Ring"){
+                document.getElementById('f_mp3').play();
+            }else{
+                speak("注意障礙物");
+                // speak("發現斑馬線");
             }
         }
         console.log(voiceMode);
