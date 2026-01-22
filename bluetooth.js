@@ -6,9 +6,10 @@ import { voiceState } from "./index.js";
 let serviceUuid = 0x181A;
 // let serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 let voiceUuid = "a0451b3a-f056-4ce5-bc13-0838e26b2d68";
+let DISTUUID = "c3f1b2a4-9d67-4f8a-8e12-5a9b7c4d210f";
 
 // 宣告一個包含兩個 UUID 的陣列
-let UuidTargets = [voiceUuid];
+let UuidTargets = [voiceUuid,DISTUUID];
 let server;
 let service;
 let device;
@@ -19,7 +20,7 @@ export async function bleSearch() {
         log('Requesting Bluetooth Device...');
         device = await navigator.bluetooth.requestDevice({
             // add newDD
-            optionalServices: [serviceUuid, voiceUuid],
+            optionalServices: [serviceUuid, voiceUuid,DISTUUID],
             // acceptAllDevices: true
             filters: [{ name: "WhiteCane" }]
         });
@@ -131,6 +132,15 @@ function callback(event) {
             }
         }
         console.log(voiceMode);
+    }
+    if (event.currentTarget.uuid === DISTUUID) {
+        const dv = event.currentTarget.value;
+
+        // 如果 BLE 端是 writeData16()（距離 cm）
+        const num = dv.getUint16(0, true);
+
+        // 顯示在框框
+        document.getElementById("dist-box").textContent = num;
     }
 }
 
