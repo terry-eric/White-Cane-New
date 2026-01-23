@@ -20,7 +20,7 @@ export async function bleSearch() {
         log('Requesting Bluetooth Device...');
         device = await navigator.bluetooth.requestDevice({
             // add newDD
-            optionalServices: [serviceUuid, voiceUuid,DISTUUID],
+            optionalServices: [serviceUuid],
             // acceptAllDevices: true
             filters: [{ name: "WhiteCane" }]
         });
@@ -97,51 +97,34 @@ async function reConnect() {
 }
 
 function callback(event) {
+  const uuid = event.currentTarget.uuid;
+  const dv = event.currentTarget.value;
 
-    if (event.currentTarget.uuid === voiceUuid) {
-        let value = event.currentTarget.value;
-        console.log(value);
-        let a = [];
-        for (let i = 0; i < value.byteLength; i++) {
-            a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
-        }
-        console.log(a);
-        let voiceMode = parseInt(a, 16);
-        if (voiceMode == 4) {
-            if (voiceState == "Ring") {
-                document.getElementById('b_mp3').play();
-            }else{
-                speak("注意高低差");
-            }
+  if (uuid === voiceUuid) {
+    const voiceMode = dv.getUint8(0);   // ✅ 正確解析
 
-        }
-        if (voiceMode == 0) {
-            if (voiceState == "Ring"){
-                document.getElementById('g_mp3').play();
-            }else{
-                speak("發現導盲磚");
-                // speak("發現斑馬線");
-            }
-        }
-        if (voiceMode == 5) {
-            if (voiceState == "Ring"){
-                document.getElementById('f_mp3').play();
-            }else{
-                speak("注意障礙物");
-                // speak("發現斑馬線");
-            }
-        }
-        console.log(voiceMode);
+    if (voiceMode === 4) {
+      if (voiceState === "Ring") document.getElementById('b_mp3').play();
+      else speak("注意高低差");
+    } else if (voiceMode === 0) {
+      if (voiceState === "Ring") document.getElementById('g_mp3').play();
+      else speak("發現導盲磚");
+    } else if (voiceMode === 5) {
+      if (voiceState === "Ring") document.getElementById('f_mp3').play();
+      else speak("注意障礙物");
     }
-    if (event.currentTarget.uuid === DISTUUID) {
-        const dv = event.currentTarget.value;
 
-        // 如果 BLE 端是 writeData16()（距離 cm）
-        const num = dv.getUint16(0, true);
+    console.log("VOICE =", voiceMode);
+    return;
+  }
 
-        // 顯示在框框
-        document.getElementById("dist-box").textContent = num;
-    }
+  if (uuid === DISTUUID) {
+    console.log("DIST notify arrived", event.currentTarget.value.byteLength);
+    const num = dv.getUint16(0, true);  // ✅ 你 peripheral 用 writeData16
+    document.getElementById("dist-box").textContent = num;
+    // console.log("DIST =", num);
+    return;
+  }
 }
 
 export async function sendModeEvent(message, Uuid) {
