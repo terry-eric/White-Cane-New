@@ -1,15 +1,16 @@
 import { speak } from "./voice.js";
 import { bytes2int16, log } from "./utils.js";
-import { voiceState } from "./index.js";
+import { voiceState } from "./state.js";
 
 // add new
 let serviceUuid = 0x181A;
 // let serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 let voiceUuid = "a0451b3a-f056-4ce5-bc13-0838e26b2d68";
 let DISTUUID = "c3f1b2a4-9d67-4f8a-8e12-5a9b7c4d210f";
+let FEEDBACK_UUID = "e528b1c4-d3f9-4e6a-8b2c-1f4d9e3a7c5b"; // 新增的回傳 UUID
 
 // 宣告一個包含兩個 UUID 的陣列
-let UuidTargets = [voiceUuid,DISTUUID];
+let UuidTargets = [voiceUuid, DISTUUID];
 let server;
 let service;
 let device;
@@ -97,34 +98,59 @@ async function reConnect() {
 }
 
 function callback(event) {
-  const uuid = event.currentTarget.uuid;
-  const dv = event.currentTarget.value;
+    const uuid = event.currentTarget.uuid;
+    const dv = event.currentTarget.value;
 
-  if (uuid === voiceUuid) {
-    const voiceMode = dv.getUint8(0);   // ✅ 正確解析
+    if (uuid === voiceUuid) {
+        const voiceMode = dv.getUint8(0);   // ✅ 正確解析
 
-    if (voiceMode === 4) {
-      if (voiceState === "Ring") document.getElementById('b_mp3').play();
-      else speak("注意高低差");
-    } else if (voiceMode === 0) {
-      if (voiceState === "Ring") document.getElementById('g_mp3').play();
-      else speak("發現導盲磚");
-    } else if (voiceMode === 5) {
-      if (voiceState === "Ring") document.getElementById('f_mp3').play();
-      else speak("注意障礙物");
+        if (voiceMode === 4) {
+            if (voiceState === "Ring") document.getElementById('b_mp3').play();
+            else speak("注意高低差");
+        } else if (voiceMode === 0) {
+            if (voiceState === "Ring") document.getElementById('g_mp3').play();
+            else speak("發現導盲磚");
+        } else if (voiceMode === 5) {
+            if (voiceState === "Ring") document.getElementById('f_mp3').play();
+            else speak("注意障礙物");
+        }
+
+        console.log("VOICE =", voiceMode);
+        return;
     }
 
-    console.log("VOICE =", voiceMode);
-    return;
-  }
+    if (uuid === DISTUUID) {
+        console.log("DIST notify arrived", event.currentTarget.value.byteLength);
+        const num = dv.getUint16(0, true);  // ✅ 你 peripheral 用 writeData16
+        document.getElementById("dist-box").textContent = num;
+        // console.log("DIST =", num);
 
-  if (uuid === DISTUUID) {
-    console.log("DIST notify arrived", event.currentTarget.value.byteLength);
-    const num = dv.getUint16(0, true);  // ✅ 你 peripheral 用 writeData16
-    document.getElementById("dist-box").textContent = num;
-    // console.log("DIST =", num);
-    return;
-  }
+        // 判斷 TOF 數值並回傳給邊緣端 -> 改為由使用者設定閥值，不在此處自動判斷
+        // judgeDistance(num);
+        return;
+    }
+}
+
+// 傳送閥值設定給邊緣端
+// type: 1 為障礙物, 2 為高低差
+export async function sendThreshold(type, value) {
+    // 準備要傳送的資料 (Uint8Array: [type, value])
+    // 假設 value 小於 255cm，如果大於 255 需要改用 Uint16
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    view.setUint8(0, type);
+    view.setUint8(1, value);
+
+    try {
+        // 回傳到 FEEDBACK_UUID
+        let characteristicTarget = await service.getCharacteristic(FEEDBACK_UUID);
+        await characteristicTarget.writeValue(buffer);
+        console.log(`Sent threshold - Type: ${type}, Value: ${value}`);
+        speak("設定成功");
+    } catch (error) {
+        console.log("設定錯誤", error);
+        speak("設定失敗");
+    }
 }
 
 export async function sendModeEvent(message, Uuid) {

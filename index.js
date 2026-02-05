@@ -1,13 +1,14 @@
 import { mouseTouchChange } from "./mouse_event.js";
 import { speak } from "./voice.js";
 import { wakeLockStart, wakeLockStop } from "./keep_wake.js";
-import { bleSearch, bleDisconnect, sendModeEvent } from "./bluetooth.js";
+import { bleSearch, bleDisconnect, sendModeEvent, sendThreshold } from "./bluetooth.js";
 import { log } from "./utils.js";
 import { lock, positionBarCal, startPoint, unlock } from "./animation_erase.js";
+import { voiceState, setVoiceState } from "./state.js";
 
 mouseTouchChange();
 
-export let voiceState = "Ring";
+// export let voiceState = "Ring"; // Moved to state.js
 var startButton = document.getElementById("myButton");
 var modeButton = document.getElementById("bleButton");
 var modeText = document.getElementById("voice-toggle");
@@ -46,6 +47,21 @@ document.getElementById("btn-obstacle").addEventListener("click", function () {
   }
 })
 
+// 設定閥值按鈕事件
+document.getElementById("btn-set-obstacle").addEventListener("click", function () {
+  const val = document.getElementById("obstacle-threshold").value;
+  if (val) {
+    sendThreshold(1, parseInt(val)); // Type 1: 障礙物
+  }
+});
+
+document.getElementById("btn-set-height").addEventListener("click", function () {
+  const val = document.getElementById("height-threshold").value;
+  if (val) {
+    sendThreshold(2, parseInt(val)); // Type 2: 高低差
+  }
+});
+
 function toggleColor() {
   if (startButton.classList.contains("btn-primary")) {
     onStartButtonClick();
@@ -59,12 +75,14 @@ function toggleColorBle() {
     modeButton.classList.remove("btn-warning");
     modeButton.classList.add("btn-info");
     modeText.innerHTML = "語音";
-    voiceState = "Ring";
+    modeButton.classList.add("btn-info");
+    modeText.innerHTML = "語音";
+    setVoiceState("Ring");
   } else {
     modeButton.classList.remove("btn-info");
     modeButton.classList.add("btn-warning");
     modeText.innerHTML = "鈴聲";
-    voiceState = "Voice";
+    setVoiceState("Voice");
   }
 }
 

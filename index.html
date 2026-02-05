@@ -84,6 +84,16 @@
             <button id="btn-GuideBrick" type="button" class="btn btn-info front-6">發現導盲磚</button>
             <button id="btn-obstacle" type="button" class="btn btn-danger front-6">注意障礙物</button>
         </div>
+        <div class="input-group mb-3 mt-3">
+            <span class="input-group-text">障礙物閥值</span>
+            <input type="number" id="obstacle-threshold" class="form-control" placeholder="cm" value="50">
+            <button class="btn btn-primary" type="button" id="btn-set-obstacle">設定</button>
+        </div>
+        <div class="input-group mb-3">
+            <span class="input-group-text">高低差閥值</span>
+            <input type="number" id="height-threshold" class="form-control" placeholder="cm" value="10">
+            <button class="btn btn-primary" type="button" id="btn-set-height">設定</button>
+        </div>
         <div id="dist-box" class="dist-box"></div>
     </div>
     <script>
