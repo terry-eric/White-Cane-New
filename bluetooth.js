@@ -153,6 +153,27 @@ export async function sendThreshold(type, value) {
     }
 }
 
+// 傳送自動校正命令給邊緣端
+// type: 3 為自動校正
+export async function sendCalibration() {
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    view.setUint8(0, 3);  // Type 3: 自動校正
+    view.setUint8(1, 0);  // 預留值
+
+    try {
+        let characteristicTarget = await service.getCharacteristic(FEEDBACK_UUID);
+        await characteristicTarget.writeValue(buffer);
+        console.log('Sent calibration command');
+        speak("校正指令已發送");
+        return { success: true };
+    } catch (error) {
+        console.log("校正錯誤", error);
+        speak("校正失敗");
+        return { success: false, error: error };
+    }
+}
+
 export async function sendModeEvent(message, Uuid) {
     try {
         // 傳送訊息

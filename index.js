@@ -1,7 +1,7 @@
 import { mouseTouchChange } from "./mouse_event.js";
 import { speak } from "./voice.js";
 import { wakeLockStart, wakeLockStop } from "./keep_wake.js";
-import { bleSearch, bleDisconnect, sendModeEvent, sendThreshold } from "./bluetooth.js";
+import { bleSearch, bleDisconnect, sendModeEvent, sendThreshold, sendCalibration } from "./bluetooth.js";
 import { log } from "./utils.js";
 import { lock, positionBarCal, startPoint, unlock } from "./animation_erase.js";
 import { voiceState, setVoiceState } from "./state.js";
@@ -60,6 +60,64 @@ document.getElementById("btn-set-height").addEventListener("click", function () 
   if (val) {
     sendThreshold(2, parseInt(val)); // Type 2: 高低差
   }
+});
+
+// 自動校正按鈕事件
+document.getElementById("btn-start-calibrate").addEventListener("click", async function () {
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = "校正中...";
+
+  try {
+    const result = await sendCalibration();
+    console.log("Calibration result:", result);
+  } catch (e) {
+    console.log("Calibration error (may be disconnected):", e);
+  }
+
+  // 等待設備回傳數據
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // 獲取當前 dist-box 的值作為校正結果
+  const distBox = document.getElementById("dist-box");
+  const currentDist = distBox.textContent.trim();
+  console.log("Current dist-box value:", currentDist);
+
+  const distValue = parseInt(currentDist, 10);
+  console.log("Parsed distValue:", distValue);
+
+  // 顯示校正結果
+  document.getElementById("calibrate-height-val").textContent = currentDist || "--";
+  document.getElementById("calibrate-result").style.display = "block";
+
+  // 同時更新高低差閥值輸入框
+  const heightInput = document.getElementById("height-threshold");
+
+  if (!isNaN(distValue) && distValue > 0) {
+    const calibratedValue = distValue + 8; // 偵測值加 8cm
+    heightInput.value = calibratedValue;
+    document.getElementById("calibrate-height-val").textContent = calibratedValue; // 更新顯示
+    console.log("Height input value set to:", calibratedValue);
+    speak("校正成功，閥值已設定為" + calibratedValue + "公分");
+    // 自動發送設定到設備
+    try {
+      sendThreshold(2, calibratedValue);
+    } catch (e) {
+      console.log("Send threshold error:", e);
+    }
+  } else {
+    // 顯示提示訊息
+    alert("校正失敗！請確認：\n1. 已點擊「點擊開始」連接藍牙\n2. 設備正在傳送距離數據\n3. 螢幕上顯示有距離數值");
+    console.log("distValue is invalid, not setting input value");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "開始校正";
+});
+
+// 當 Modal 關閉時重置結果顯示
+document.getElementById("calibrateModal").addEventListener("hidden.bs.modal", function () {
+  document.getElementById("calibrate-result").style.display = "none";
 });
 
 function toggleColor() {
