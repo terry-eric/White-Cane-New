@@ -94,7 +94,7 @@ document.getElementById("btn-start-calibrate").addEventListener("click", async f
   const heightInput = document.getElementById("height-threshold");
 
   if (!isNaN(distValue) && distValue > 0) {
-    const calibratedValue = distValue + 8; // 偵測值加 8cm
+    const calibratedValue = Math.round(distValue / 10) + 8; // 除10轉cm，再加 8cm
     heightInput.value = calibratedValue;
     document.getElementById("calibrate-height-val").textContent = calibratedValue; // 更新顯示
     console.log("Height input value set to:", calibratedValue);

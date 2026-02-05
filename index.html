@@ -47,6 +47,15 @@
             color: #0dcaf0;
             background-color: #000;
         }
+
+        .btn-auto-text {
+            font-size: clamp(4vh, 6vw, 8vh);
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 
@@ -70,16 +79,16 @@
             <button id="myButton" class="btn btn-primary outline btn-lg mb-3">點擊開始</button>
         </div>
         <div class="d-flex gap-2 mb-3">
-            <button id="bleButton" class="btn btn-info outline btn-lg flex-fill">
+            <button id="bleButton" class="btn btn-info outline btn-lg btn-auto-text flex-fill">
                 <div>切換</div>
                 <div id="voice-toggle">語音</div>
             </button>
-            <button id="btn-lock" class="btn btn-warning outline btn-lg flex-fill">
+            <button id="btn-lock" class="btn btn-warning outline btn-lg btn-auto-text flex-fill">
                 <div>螢幕</div>
                 <div>保護</div>
             </button>
-            <button id="btn-calibrate" class="btn btn-success outline btn-lg flex-fill" data-bs-toggle="modal"
-                data-bs-target="#calibrateModal">
+            <button id="btn-calibrate" class="btn btn-success outline btn-lg btn-auto-text flex-fill"
+                data-bs-toggle="modal" data-bs-target="#calibrateModal">
                 <div>自動</div>
                 <div>校正</div>
             </button>
