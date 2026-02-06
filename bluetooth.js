@@ -122,7 +122,7 @@ function callback(event) {
     if (uuid === DISTUUID) {
         console.log("DIST notify arrived", event.currentTarget.value.byteLength);
         const num = dv.getUint16(0, true);  // ✅ 你 peripheral 用 writeData16
-        document.getElementById("dist-box").textContent = num;
+        document.getElementById("dist-box").textContent = Math.round(num / 10); // 除10顯示
         // console.log("DIST =", num);
 
         // 判斷 TOF 數值並回傳給邊緣端 -> 改為由使用者設定閥值，不在此處自動判斷

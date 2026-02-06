@@ -62,6 +62,26 @@ document.getElementById("btn-set-height").addEventListener("click", function () 
   }
 });
 
+// 滑桿事件 - 障礙物閥值
+const obstacleSlider = document.getElementById("obstacle-slider");
+const obstacleInput = document.getElementById("obstacle-threshold");
+obstacleSlider.addEventListener("input", function () {
+  obstacleInput.value = this.value;
+});
+obstacleInput.addEventListener("input", function () {
+  obstacleSlider.value = this.value;
+});
+
+// 滑桿事件 - 高低差閥值
+const heightSlider = document.getElementById("height-slider");
+const heightInput = document.getElementById("height-threshold");
+heightSlider.addEventListener("input", function () {
+  heightInput.value = this.value;
+});
+heightInput.addEventListener("input", function () {
+  heightSlider.value = this.value;
+});
+
 // 自動校正按鈕事件
 document.getElementById("btn-start-calibrate").addEventListener("click", async function () {
   const btn = this;
@@ -94,14 +114,26 @@ document.getElementById("btn-start-calibrate").addEventListener("click", async f
   const heightInput = document.getElementById("height-threshold");
 
   if (!isNaN(distValue) && distValue > 0) {
-    const calibratedValue = Math.round(distValue / 10) + 8; // 除10轉cm，再加 8cm
+    const calibratedValue = distValue + 8; // dist-box已是cm，直接加8cm
+    const obstacleValue = Math.max(calibratedValue - 20, 10); // 障礙物閥值 = 高低差 - 20cm，最小10cm
+
+    // 更新高低差閥值
     heightInput.value = calibratedValue;
-    document.getElementById("calibrate-height-val").textContent = calibratedValue; // 更新顯示
-    console.log("Height input value set to:", calibratedValue);
-    speak("校正成功，閥值已設定為" + calibratedValue + "公分");
+    document.getElementById("height-slider").value = calibratedValue;
+    document.getElementById("calibrate-height-val").textContent = calibratedValue;
+
+    // 更新障礙物閥值
+    document.getElementById("obstacle-threshold").value = obstacleValue;
+    document.getElementById("obstacle-slider").value = obstacleValue;
+
+    console.log("Height threshold set to:", calibratedValue);
+    console.log("Obstacle threshold set to:", obstacleValue);
+    speak("校正成功，高低差閥值" + calibratedValue + "公分，障礙物閥值" + obstacleValue + "公分");
+
     // 自動發送設定到設備
     try {
-      sendThreshold(2, calibratedValue);
+      sendThreshold(2, calibratedValue); // 高低差
+      sendThreshold(1, obstacleValue);   // 障礙物
     } catch (e) {
       console.log("Send threshold error:", e);
     }
