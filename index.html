@@ -141,23 +141,6 @@
         <input type="range" class="form-range mb-3" id="height-slider" min="5" max="250" value="10">
         <div id="dist-box" class="dist-box"></div>
     </div>
-    <script>
-        // a2hs https://github.com/mdn/pwa-examples/tree/main/a2hs
-        // Register service worker to control making site work offline 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker
-                .register('/white-cane-app/sw.js')
-                .then(() => { console.log('Service Worker Registered'); });
-        }
-
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="animation_erase.js?v=2"></script>
-    <script type="module" src="bluetooth.js?v=2"></script>
-    <script type="module" src="index.js?v=2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
-        crossorigin="anonymous"></script>
     <audio id="a_mp3" src="a.mp3"></audio>
     <audio id="b_mp3" src="b.mp3"></audio>
     <audio id="c_mp3" src="c.mp3"></audio>
@@ -165,6 +148,10 @@
     <audio id="e_mp3" src="e.mp3"></audio>
     <audio id="f_mp3" src="f.mp3"></audio>
     <audio id="g_mp3" src="g.mp3"></audio>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+        crossorigin="anonymous"></script>
+    <script type="module" src="main.js"></script>
 </body>
 
 </html>

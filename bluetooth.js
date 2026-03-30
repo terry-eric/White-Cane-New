@@ -1,53 +1,61 @@
 import { speak } from "./voice.js";
-import { bytes2int16, log } from "./utils.js";
-import { voiceState } from "./state.js";
+import { log } from "./utils.js";
 
-// add new
-let serviceUuid = 0x181A;
-// let serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-let voiceUuid = "a0451b3a-f056-4ce5-bc13-0838e26b2d68";
-let DISTUUID = "c3f1b2a4-9d67-4f8a-8e12-5a9b7c4d210f";
-let FEEDBACK_UUID = "e528b1c4-d3f9-4e6a-8b2c-1f4d9e3a7c5b"; // 新增的回傳 UUID
+const serviceUuid = 0x181A;
+const voiceUuid = "a0451b3a-f056-4ce5-bc13-0838e26b2d68";
+const DISTUUID = "c3f1b2a4-9d67-4f8a-8e12-5a9b7c4d210f";
+const FEEDBACK_UUID = "e528b1c4-d3f9-4e6a-8b2c-1f4d9e3a7c5b";
 
-// 宣告一個包含兩個 UUID 的陣列
-let UuidTargets = [voiceUuid, DISTUUID];
+const UuidTargets = [voiceUuid, DISTUUID];
 let server;
 let service;
 let device;
-const US = [];
+
+const handlers = {
+    onConnected() { },
+    onDisconnected() { },
+    onDistanceChange() { },
+    onVoiceMode() { },
+};
+
+export function setBluetoothHandlers(nextHandlers = {}) {
+    Object.assign(handlers, nextHandlers);
+}
 
 export async function bleSearch() {
     try {
         log('Requesting Bluetooth Device...');
         device = await navigator.bluetooth.requestDevice({
-            // add newDD
             optionalServices: [serviceUuid],
-            // acceptAllDevices: true
             filters: [{ name: "WhiteCane" }]
         });
 
-        connectDevice();
         device.addEventListener('gattserverdisconnected', reConnect);
-        return "success"
+        await connectDevice();
+        return "success";
 
     } catch (error) {
         speak('連接錯誤，請重新連接');
         log('Argh! ' + error);
+        return "failed";
     }
 }
 
 export async function bleDisconnect() {
-    // 停止所有 characteristic 的通知功能
-    for (const [index, UuidTarget] of UuidTargets.entries()) {
-        const characteristicTarget = await service.getCharacteristic(UuidTarget);
-        await characteristicTarget.stopNotifications();
-        characteristicTarget.removeEventListener('characteristicvaluechanged',
-            callback);
+    try {
+        await stopNotifications();
+        if (device) {
+            device.removeEventListener('gattserverdisconnected', reConnect);
+        }
+        if (server && server.connected) {
+            server.disconnect();
+        }
+        handlers.onDisconnected();
+        speak('已斷開連接');
+        log('> Notifications stopped');
+    } catch (error) {
+        log('Argh! ' + error);
     }
-    device.removeEventListener('gattserverdisconnected', reConnect);
-    await server.disconnect(); // 需要手動斷開 GATT 伺服器的連線
-    speak('已斷開連接');
-    log('> Notifications stopped');
 }
 
 async function connectDevice() {
@@ -60,32 +68,19 @@ async function connectDevice() {
         service = await server.getPrimaryService(serviceUuid);
 
         log('Getting Characteristic...');
-        // add new
-
-        // 使用 for...of 迴圈遍歷陣列中的元素，取得每個 UUID 對應的 characteristic 並啟用通知
-        for (const [index, UuidTarget] of UuidTargets.entries()) {
-
-            // 使用 service.getCharacteristic() 方法來取得指定 UUID 對應的 characteristic
-            let characteristicTarget = await service.getCharacteristic(UuidTarget);
-
-            // 當 characteristic 的值發生改變時，執行 callback 函數
-            characteristicTarget.addEventListener("characteristicvaluechanged", callback);
-
-            // 啟用 characteristic 的通知功能，這樣當 characteristic 的值改變時，就會發送通知
-            await characteristicTarget.startNotifications();
-        };
+        await startNotifications();
         speak('成功連接');
+        handlers.onConnected();
     } catch (error) {
         console.log("連接錯誤", error);
+        throw error;
     }
 }
 
 async function reConnect() {
 
     exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
-        async function toTry() {
-
-        },
+        connectDevice,
         function success() {
             log('> Bluetooth Device connected. Try disconnect it now.');
             speak('成功連接');
@@ -102,31 +97,16 @@ function callback(event) {
     const dv = event.currentTarget.value;
 
     if (uuid === voiceUuid) {
-        const voiceMode = dv.getUint8(0);   // ✅ 正確解析
-
-        if (voiceMode === 4) {
-            if (voiceState === "Ring") document.getElementById('b_mp3').play();
-            else speak("注意高低差");
-        } else if (voiceMode === 0) {
-            if (voiceState === "Ring") document.getElementById('g_mp3').play();
-            else speak("發現導盲磚");
-        } else if (voiceMode === 5) {
-            if (voiceState === "Ring") document.getElementById('f_mp3').play();
-            else speak("注意障礙物");
-        }
+        const voiceMode = dv.getUint8(0);
+        handlers.onVoiceMode(voiceMode);
 
         console.log("VOICE =", voiceMode);
         return;
     }
 
     if (uuid === DISTUUID) {
-        console.log("DIST notify arrived", event.currentTarget.value.byteLength);
-        const num = dv.getUint16(0, true);  // ✅ 你 peripheral 用 writeData16
-        document.getElementById("dist-box").textContent = Math.round(num / 10); // 除10顯示
-        // console.log("DIST =", num);
-
-        // 判斷 TOF 數值並回傳給邊緣端 -> 改為由使用者設定閥值，不在此處自動判斷
-        // judgeDistance(num);
+        const num = dv.getUint16(0, true);
+        handlers.onDistanceChange(Math.round(num / 10), num);
         return;
     }
 }
@@ -142,8 +122,7 @@ export async function sendThreshold(type, value) {
     view.setUint8(1, value);
 
     try {
-        // 回傳到 FEEDBACK_UUID
-        let characteristicTarget = await service.getCharacteristic(FEEDBACK_UUID);
+        const characteristicTarget = await getFeedbackCharacteristic();
         await characteristicTarget.writeValue(buffer);
         console.log(`Sent threshold - Type: ${type}, Value: ${value}`);
         speak("設定成功");
@@ -162,7 +141,7 @@ export async function sendCalibration() {
     view.setUint8(1, 0);  // 預留值
 
     try {
-        let characteristicTarget = await service.getCharacteristic(FEEDBACK_UUID);
+        const characteristicTarget = await getFeedbackCharacteristic();
         await characteristicTarget.writeValue(buffer);
         console.log('Sent calibration command');
         speak("校正指令已發送");
@@ -221,6 +200,32 @@ async function exponentialBackoff(max, delay, toTry, success, fail) {
 }
 
 function time(text) {
-    log('[' + new Date().toJSON().substring(11, 8) + '] ' + text);
+    log('[' + new Date().toISOString().slice(11, 19) + '] ' + text);
 }
 
+async function startNotifications() {
+    for (const UuidTarget of UuidTargets) {
+        const characteristicTarget = await service.getCharacteristic(UuidTarget);
+        characteristicTarget.removeEventListener("characteristicvaluechanged", callback);
+        characteristicTarget.addEventListener("characteristicvaluechanged", callback);
+        await characteristicTarget.startNotifications();
+    }
+}
+
+async function stopNotifications() {
+    if (!service) {
+        return;
+    }
+    for (const UuidTarget of UuidTargets) {
+        const characteristicTarget = await service.getCharacteristic(UuidTarget);
+        await characteristicTarget.stopNotifications();
+        characteristicTarget.removeEventListener("characteristicvaluechanged", callback);
+    }
+}
+
+async function getFeedbackCharacteristic() {
+    if (!service) {
+        throw new Error("Bluetooth service is not connected.");
+    }
+    return service.getCharacteristic(FEEDBACK_UUID);
+}
