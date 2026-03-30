@@ -1,23 +1,60 @@
-self.addEventListener('install', (e) => {
-    e.waitUntil(
-        caches.open('fox-store').then((cache) => cache.addAll([
-            '/White-Cane-New/sytle.css',
-            '/White-Cane-New/index.js',
-            '/White-Cane-New/animation_erase.js',
-            '/White-Cane-New/bluetooth.js',
-            '/White-Cane-New/chart.js',
-            '/White-Cane-New/csv_save.js',
-            '/White-Cane-New/keep_wake.js',
-            '/White-Cane-New/mouse_event.js',
-            '/White-Cane-New/voice.js',
-            '/White-Cane-New/utils.js',
-        ])),
-    );
+const CACHE_NAME = "white-cane-cache-v2";
+const ASSETS = [
+    "./",
+    "./index.html",
+    "./sytle.css",
+    "./main.js",
+    "./index.js",
+    "./alerts.js",
+    "./animation_erase.js",
+    "./bluetooth.js",
+    "./dom.js",
+    "./keep_wake.js",
+    "./mouse_event.js",
+    "./state.js",
+    "./utils.js",
+    "./voice.js",
+    "./manifest.webmanifest",
+    "./icon/fox-icon.png",
+    "./a.mp3",
+    "./b.mp3",
+    "./c.mp3",
+    "./d.mp3",
+    "./e.mp3",
+    "./f.mp3",
+    "./g.mp3",
+];
+
+self.addEventListener("install", (event) => {
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+    self.skipWaiting();
 });
 
-self.addEventListener('fetch', (e) => {
-    console.log(e.request.url);
-    e.respondWith(
-        caches.match(e.request).then((response) => response || fetch(e.request)),
+self.addEventListener("activate", (event) => {
+    event.waitUntil(
+        caches.keys().then((keys) => Promise.all(
+            keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        ))
+    );
+    self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+    if (event.request.method !== "GET") {
+        return;
+    }
+
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) {
+        return;
+    }
+
+    event.respondWith(
+        caches.match(event.request).then((cacheResponse) => {
+            if (cacheResponse) {
+                return cacheResponse;
+            }
+            return fetch(event.request);
+        })
     );
 });

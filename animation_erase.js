@@ -1,37 +1,47 @@
-let startX;
-let percentage = 0;
-const unlockBar = document.getElementById('unlock-bar');
+export function createLockController(lockScreen, unlockBar) {
+    let startX = 0;
+    let percentage = 0;
 
-export function startPoint(e) {
-    startX = e.pageX;
-}
+    function resetBar() {
+        unlockBar.style.width = "0%";
+        unlockBar.innerText = "0%";
+    }
 
-export function unlock() {
-    if (percentage < 95) {
-        unlockBar.style.width = `0%`
-        unlockBar.innerText = `0%`
-    } else {
+    function startPoint(e) {
+        startX = e.pageX;
+    }
+
+    function unlock() {
+        if (percentage >= 95) {
+            lockScreen.classList.toggle("hidden");
+        }
+        resetBar();
+        percentage = 0;
+    }
+
+    function lock() {
         lockScreen.classList.toggle("hidden");
+        resetBar();
     }
-    percentage = 0
-}
 
-var lockScreen = document.getElementById("lock-screen");
-export function lock() {
-    lockScreen.classList.toggle("hidden");
-    unlockBar.style.width = `0%`
-    unlockBar.innerText = `0%`
-}
+    function positionBarCal(e) {
+        const deltaX = startX - e.pageX;
+        percentage = parseInt((deltaX / (window.screen.width * 0.5)) * 100, 10);
 
-export function positionBarCal(e) {
-    let deltaX = startX - e.pageX
-    // use deltaX to change progress value
-    percentage = parseInt(deltaX / (window.screen.width * 0.5) * 100)
-    if (percentage < -100) {
-        percentage = 100
-    } else if (percentage > 0) {
-        percentage = 0
+        if (percentage < -100) {
+            percentage = 100;
+        } else if (percentage > 0) {
+            percentage = 0;
+        }
+
+        unlockBar.style.width = `${Math.abs(percentage)}%`;
+        unlockBar.innerText = `${Math.abs(percentage)}%`;
     }
-    unlockBar.style.width = `${Math.abs(percentage)}%`
-    unlockBar.innerText = `${Math.abs(percentage)}%`
+
+    return {
+        lock,
+        positionBarCal,
+        startPoint,
+        unlock,
+    };
 }
